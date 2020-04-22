@@ -2,6 +2,7 @@ from pprint import pprint
 from urllib.parse import urlencode
 import requests
 import json
+import time
 
 def solitary_group(user1, maxpeople=0):
     #Получение id пользователя - удовлетворение условия "программа должна одинаково запускаться с ID и ника
@@ -23,6 +24,11 @@ def solitary_group(user1, maxpeople=0):
             'v': 5.103
         }
     )
+    #получение ID друзей
+    ids = str(response_friends_list.json()['response']['items'][0])
+    for first_user_friend in response_friends_list.json()['response']['items'][1:]:
+        ids = ids + ', ' + str(first_user_friend)
+    print(ids)
     #Получение списка групп целевого пользователя и составление списка словарей групп
     response_user_groups = requests.get(
         'https://api.vk.com/method/groups.get',
@@ -36,48 +42,35 @@ def solitary_group(user1, maxpeople=0):
     )
     user_group_list = []
     for user_group in response_user_groups.json()['response']['items']:
-        user_group_list.append({'id': user_group['id'], 'name': user_group['name'], 'friends_with': 0})
-        #словарь группы содержит id и имя для удобства отладки; кроме того, есть индекс
-    #получение групп друзей
-    for friend in response_friends_list.json()['response']['items']:
-        friend_count += 1
-        friend_group_count = 0
-        response_friend_groups = requests.get(
-            'https://api.vk.com/method/groups.get',
+        time.sleep(1)
+        print(f'{user_group["name"]}:')
+        response_mutual_groups = requests.get(
+            'https://api.vk.com/method/groups.isMember',
             params={
                 'access_token': TOKEN,
-                'user_id': friend,
+                'group_id': user_group['id'],
+                'user_ids': ids,
                 'extended': 1,
                 # 'fields': 'name', не работает! Не забыть спросить, почему!
                 'v': 5.103
             }
         )
-        # print(f'Friend №{friend_count}: Id - {friend};', end='')
+        friend_member = 0
         try:
-            print(f' first group - {response_friend_groups.json()["response"]["items"][0]}')
-            # поиск схожих групп и удаление неуникальных
-            for friend_group in response_friend_groups.json()["response"]["items"]:
-                friend_group_count += 1
-                user_group_count = 0
-                if friend_group_count > 1000:
-                    print('Ошибка: слишком много групп')
-                    break
-                for user_group in user_group_list:
-                    user_group_count += 1
-                    print(f'Friends: {friend_count}/{len(response_friends_list.json()["response"]["items"])}, '
-                          f'friend groups: {friend_group_count}/{len(response_friend_groups.json()["response"]["items"])},'
-                          f'user unique groups: {user_group_count}/{len(user_group_list)}')
-                    if friend_group['id'] == user_group['id']:
-                        user_group['friends_with'] += 1
-                        if user_group['friends_with'] > maxpeople:
-                            del(user_group_list[user_group_list.index(user_group)])
-
-        #убирает падение программ от удаленных друзей или друзей без групп
+            for user_membership in response_mutual_groups.json()['response']:
+                if user_membership['member'] == 1:
+                    friend_member += 1
+            if friend_member <= maxpeople:
+                user_group_list.append({'id': user_group['id'], 'name': user_group['name']})
         except KeyError:
-            print('')
-        except IndexError:
-            print('')
+            print('Error!\n\n\n')
+            pprint(response_mutual_groups.json())
+            print('\n\n\n')
+        # pprint(response_mutual_groups.json())
+
+
     return user_group_list
+
 
 
 

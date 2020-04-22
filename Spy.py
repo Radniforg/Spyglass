@@ -3,7 +3,8 @@ from urllib.parse import urlencode
 import requests
 import json
 
-def solitary_group(user1):
+def solitary_group(user1, maxpeople = 0):
+    #Получение id пользователя - удовлетворение условия "программа должна одинаково запускаться с ID и ника
     response_id = requests.get(
         'https://api.vk.com/method/users.get',
         params={
@@ -12,6 +13,7 @@ def solitary_group(user1):
             'v': 5.103
         }
     )
+    #Получение списка друзей
     response_friends_list = requests.get(
         'https://api.vk.com/method/friends.get',
         params={
@@ -20,6 +22,7 @@ def solitary_group(user1):
             'v': 5.103
         }
     )
+    #Получение списка групп целевого пользователя и составление списка словарей групп
     response_user_groups = requests.get(
         'https://api.vk.com/method/groups.get',
         params={
@@ -33,6 +36,8 @@ def solitary_group(user1):
     user_group_list = []
     for user_group in response_user_groups.json()['response']['items']:
         user_group_list.append({'id': user_group['id'], 'name': user_group['name']})
+        #словарь группы содержит id и имя для удобства отладки; кроме того, есть индекс
+    #получение групп друзей
     for friend in response_friends_list.json()['response']['items']:
         response_friend_groups = requests.get(
             'https://api.vk.com/method/groups.get',
@@ -47,34 +52,25 @@ def solitary_group(user1):
         print(f'Id - {friend};', end='')
         try:
             print(f' first group - {response_friend_groups.json()["response"]["items"][0]}')
+        #убирает падение программ от удаленных друзей или друзей без групп
         except KeyError:
             print('')
         except IndexError:
             print('')
     return user_group_list
 
-
-    response_second = requests.get(
-        'https://api.vk.com/method/groups.get',
-        params={
-            'access_token': TOKEN,
-            'user_id': user2,
-            'extended': 1,
-            'v': 5.103
-        }
-    )
     solitary_groups = []
     for group_first in response_first.json()['response']['items']:
-        solitary = 1
+        solitary = 0
         for group_second in response_second.json()['response']['items']:
             if group_first['id'] == group_second['id']:
-                solitary = 0
-        if solitary == 1:
+                solitary += 1
+        if solitary <= maxpeople:
             solitary_groups.append({'id': group_first['id'], 'name': group_first['name']})
 
     # pprint(solitary_groups)
     # print(f'count: {len(solitary_groups)}')
-    return None
+    return user_group_list
 
 
 APP_ID = 7423649

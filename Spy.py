@@ -28,7 +28,6 @@ def solitary_group(user1, maxpeople=0):
     ids = str(response_friends_list.json()['response']['items'][0])
     for first_user_friend in response_friends_list.json()['response']['items'][1:]:
         ids = ids + ', ' + str(first_user_friend)
-    print(ids)
     #Получение списка групп целевого пользователя и составление списка словарей групп
     response_user_groups = requests.get(
         'https://api.vk.com/method/groups.get',
@@ -55,6 +54,7 @@ def solitary_group(user1, maxpeople=0):
                 'v': 5.103
             }
         )
+        #есть ли друг в группе?
         friend_member = 0
         try:
             for user_membership in response_mutual_groups.json()['response']:

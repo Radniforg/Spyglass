@@ -54,7 +54,6 @@ def solitary_group(user1, maxpeople=0):
             'v': 5.103
         }
     )
-    pprint(response_user_groups.json())
     user_group_list = []
     group_count = 0
     for user_group in response_user_groups.json()['response']['items']:
@@ -82,9 +81,6 @@ def solitary_group(user1, maxpeople=0):
                 user_group_list.append({'name': user_group['name'], 'gid': user_group['id']})
         except KeyError:
             pass
-
-
-
     return user_group_list
 
 APP_ID = 7423649

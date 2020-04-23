@@ -30,7 +30,6 @@ def solitary_group(user1, maxpeople=0):
                     correct_input = True
                 else:
                     print('Некорректная команда. Повторите ввод')
-        # pprint(response_id.json())
     #Получение списка друзей
     response_friends_list = requests.get(
         'https://api.vk.com/method/friends.get',
@@ -73,7 +72,7 @@ def solitary_group(user1, maxpeople=0):
                 'v': 5.103
             }
         )
-        #есть ли друг в группе?
+        #проверка наличия друзей в группе?
         friend_member = 0
         try:
             for user_membership in response_mutual_groups.json()['response']:
@@ -82,20 +81,16 @@ def solitary_group(user1, maxpeople=0):
             if friend_member <= maxpeople:
                 user_group_list.append({'name': user_group['name'], 'gid': user_group['id']})
         except KeyError:
-            # print('Error!\n\n\n')
-            # pprint(response_mutual_groups.json())
-            # print('\n\n\n')
             pass
-        # pprint(response_mutual_groups.json())
+
 
 
     return user_group_list
 
 APP_ID = 7423649
-TOKEN = '49c09108f4de0d50fd395e05cbc4003d92fdabdee839cdfeb959c735370c06e3f1e4d55ce2f53235b1616'
+TOKEN = ''
 
 check_bool = False
-# print(check_bool)
 while not check_bool:
     token_check = requests.get(
         'https://api.vk.com/method/users.get',
@@ -118,15 +113,14 @@ while not check_bool:
         TOKEN = input('Пожалуйста, пройдите по ссылке и вставьте корректный TOKEN:\n')
     except KeyError:
         check_bool = True
-        # print(check_bool)
 
 username = input('Пожалуйста, введите имя пользователя или его id:\n')
 spy_report = {'report': solitary_group(username)}
-# pprint(spy_report)
 
 with open('groups.json', 'w') as report_file:
     json.dump(spy_report, report_file)
 
-with open('groups.json') as json_check:
-    json_in_file = json.load(json_check)
-    pprint(json_in_file)
+# проверка .json файла
+# with open('groups.json') as json_check:
+#     json_in_file = json.load(json_check)
+#     pprint(json_in_file)

@@ -4,7 +4,7 @@ import requests
 import json
 import time
 
-def solitary_group(user1, maxpeople=0):
+def solitary_group(user1, maxpeople=0, grouplimit=1000):
     #Получение id пользователя - удовлетворение условия "программа должна одинаково запускаться с ID и ника
     username_confirmation = False
     while not username_confirmation:
@@ -58,6 +58,9 @@ def solitary_group(user1, maxpeople=0):
     group_count = 0
     for user_group in response_user_groups.json()['response']['items']:
         group_count += 1
+        if group_count > grouplimit:
+            print(f'Программа превысила лимит групп равный {grouplimit}, оставшиеся группы не будут проанализированы')
+            break
         print(f'Проверено сообществ: {group_count}/{len(response_user_groups.json()["response"]["items"])}')
         time.sleep(1)
         response_mutual_groups = requests.get(

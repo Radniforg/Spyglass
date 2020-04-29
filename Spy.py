@@ -30,11 +30,12 @@ def user_confirmed(user1):
                     correct_input = True
                 else:
                     print('Некорректная команда. Повторите ввод')
-        return user_id
+    return user_id
 
-def user_friends(user_id, maxpeople=1000):
+def user_friends(user_id, max_friends=1000):
     #Получение списка друзей
     friend_count = 0
+    friend_limit = 0
     response_friends_list = requests.get(
         'https://api.vk.com/method/friends.get',
         params={
@@ -47,7 +48,7 @@ def user_friends(user_id, maxpeople=1000):
     id_list = []
     ids = str(response_friends_list.json()['response']['items'][0])
     for user_friend in response_friends_list.json()['response']['items'][1:]:
-        if friend_count == maxpeople:
+        if friend_count == max_friends:
             break
         elif friend_count == 1000:
             id_list.append(ids)
@@ -60,15 +61,15 @@ def user_friends(user_id, maxpeople=1000):
     id_list.append(ids)
     return id_list
 
-def solitary_group(user_id, maxpeople=0, grouplimit=1000):
+def solitary_group(user_id, id_list, maxpeople=0, grouplimit=1000):
     #Получение списка групп целевого пользователя и составление списка словарей групп
     response_user_groups = requests.get(
         'https://api.vk.com/method/groups.get',
         params={
             'access_token': TOKEN,
-            'user_id': response_id.json()['response'][0]['id'],
+            'user_id': user_id,
             'extended': 1,
-            # 'fields': 'members_count',
+            'fields': 'members_count',
             'v': 5.103
         }
     )
@@ -81,26 +82,27 @@ def solitary_group(user_id, maxpeople=0, grouplimit=1000):
             break
         print(f'Проверено сообществ: {group_count}/{len(response_user_groups.json()["response"]["items"])}')
         time.sleep(1)
-        response_mutual_groups = requests.get(
-            'https://api.vk.com/method/groups.isMember',
-            params={
-                'access_token': TOKEN,
-                'group_id': user_group['id'],
-                'user_ids': ids,
-                'extended': 1,
-                'v': 5.103
-            }
-        )
-        #проверка наличия друзей в группе?
         friend_member = 0
-        try:
-            for user_membership in response_mutual_groups.json()['response']:
-                if user_membership['member'] == 1:
-                    friend_member += 1
-            if friend_member <= maxpeople:
-                user_group_list.append({'name': user_group['name'], 'gid': user_group['id']})
-        except KeyError:
-            pass
+        for ids in id_list:
+            response_mutual_groups = requests.get(
+                'https://api.vk.com/method/groups.isMember',
+                params={
+                    'access_token': TOKEN,
+                    'group_id': user_group['id'],
+                    'user_ids': ids,
+                    'extended': 1,
+                    'v': 5.103
+                }
+            )
+            #проверка наличия друзей в группе?
+            try:
+                for user_membership in response_mutual_groups.json()['response']:
+                    if user_membership['member'] == 1:
+                        friend_member += 1
+            except KeyError:
+                pass
+        if friend_member <= maxpeople:
+            user_group_list.append({'name': user_group['name'], 'gid': user_group['id']})
     return user_group_list
 
 APP_ID = 7423649
@@ -131,7 +133,7 @@ while not check_bool:
         check_bool = True
 
 username = input('Пожалуйста, введите имя пользователя или его id:\n')
-spy_report = {'report': solitary_group(username)}
+spy_report = {'report': solitary_group(user_confirmed(username), user_friends(username))}
 
 with open('groups.json', 'w') as report_file:
     json.dump(spy_report, report_file)

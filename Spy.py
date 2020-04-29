@@ -4,7 +4,7 @@ import requests
 import json
 import time
 
-def solitary_group(user1, maxpeople=0, grouplimit=1000):
+def user_confirmed(user1):
     #Получение id пользователя - удовлетворение условия "программа должна одинаково запускаться с ID и ника
     username_confirmation = False
     while not username_confirmation:
@@ -30,7 +30,11 @@ def solitary_group(user1, maxpeople=0, grouplimit=1000):
                     correct_input = True
                 else:
                     print('Некорректная команда. Повторите ввод')
+        return user_id
+
+def user_friends(user_id, maxpeople=1000):
     #Получение списка друзей
+    friend_count = 0
     response_friends_list = requests.get(
         'https://api.vk.com/method/friends.get',
         params={
@@ -40,9 +44,23 @@ def solitary_group(user1, maxpeople=0, grouplimit=1000):
         }
     )
     #получение ID друзей
+    id_list = []
     ids = str(response_friends_list.json()['response']['items'][0])
-    for first_user_friend in response_friends_list.json()['response']['items'][1:]:
-        ids = ids + ', ' + str(first_user_friend)
+    for user_friend in response_friends_list.json()['response']['items'][1:]:
+        if friend_count == maxpeople:
+            break
+        elif friend_count == 1000:
+            id_list.append(ids)
+            friend_count = 0
+            ids = str(user_friend)
+        else:
+            ids = ids + ', ' + str(user_friend)
+        friend_count += 1
+        friend_limit += 1
+    id_list.append(ids)
+    return id_list
+
+def solitary_group(user_id, maxpeople=0, grouplimit=1000):
     #Получение списка групп целевого пользователя и составление списка словарей групп
     response_user_groups = requests.get(
         'https://api.vk.com/method/groups.get',
@@ -50,7 +68,7 @@ def solitary_group(user1, maxpeople=0, grouplimit=1000):
             'access_token': TOKEN,
             'user_id': response_id.json()['response'][0]['id'],
             'extended': 1,
-            # 'fields': 'member_count', не работает!
+            # 'fields': 'members_count',
             'v': 5.103
         }
     )
@@ -70,7 +88,6 @@ def solitary_group(user1, maxpeople=0, grouplimit=1000):
                 'group_id': user_group['id'],
                 'user_ids': ids,
                 'extended': 1,
-                # 'fields': 'name', не работает! Не забыть спросить, почему!
                 'v': 5.103
             }
         )

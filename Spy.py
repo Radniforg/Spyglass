@@ -4,6 +4,33 @@ import requests
 import json
 import time
 
+def token_confirmation(app_id):
+    token = ''
+    check_bool = False
+    while not check_bool:
+        token_check = requests.get(
+            'https://api.vk.com/method/users.get',
+            params={
+                'access_token': token,
+                'v': 5.103
+            }
+        )
+        try:
+            error_code_5 = token_check.json()['error']
+            OAUTH_URL = 'https://oauth.vk.com/authorize'
+            OAUTH_PARAMS = {
+                'client_id': app_id,
+                'display': 'page',
+                'scope': 'groups,friends',
+                'response_type': 'token',
+                'v': 5.52
+            }
+            print('?'.join((OAUTH_URL, urlencode(OAUTH_PARAMS))))
+            token = input('Пожалуйста, пройдите по ссылке и вставьте корректный TOKEN:\n')
+        except KeyError:
+            check_bool = True
+    return token
+
 def user_confirmed(user1):
     #Получение id пользователя - удовлетворение условия "программа должна одинаково запускаться с ID и ника
     username_confirmation = False
@@ -45,6 +72,7 @@ def user_friends(user_id, max_friends=1000):
         }
     )
     #получение ID друзей
+    pprint(response_friends_list.json())
     id_list = []
     ids = str(response_friends_list.json()['response']['items'][0])
     for user_friend in response_friends_list.json()['response']['items'][1:]:
@@ -102,43 +130,18 @@ def solitary_group(user_id, id_list, maxpeople=0, grouplimit=1000):
             except KeyError:
                 pass
         if friend_member <= maxpeople:
-            user_group_list.append({'name': user_group['name'], 'gid': user_group['id']})
+            user_group_list.append({'name': user_group['name'], 'gid': user_group['id'], 'members:': user_group['members_count']})
     return user_group_list
 
 APP_ID = 7423649
-TOKEN = ''
-
-check_bool = False
-while not check_bool:
-    token_check = requests.get(
-        'https://api.vk.com/method/users.get',
-        params={
-            'access_token': TOKEN,
-            'v': 5.103
-        }
-    )
-    try:
-        error_code_5 = token_check.json()['error']
-        OAUTH_URL = 'https://oauth.vk.com/authorize'
-        OAUTH_PARAMS = {
-            'client_id': APP_ID,
-            'display': 'page',
-            'scope': 'groups,friends',
-            'response_type': 'token',
-            'v': 5.52
-        }
-        print('?'.join((OAUTH_URL, urlencode(OAUTH_PARAMS))))
-        TOKEN = input('Пожалуйста, пройдите по ссылке и вставьте корректный TOKEN:\n')
-    except KeyError:
-        check_bool = True
-
+TOKEN = token_confirmation(APP_ID)
 username = input('Пожалуйста, введите имя пользователя или его id:\n')
-spy_report = {'report': solitary_group(user_confirmed(username), user_friends(username))}
+spy_report = {'report': solitary_group(user_confirmed(username), user_friends(user_confirmed(username)))}
 
 with open('groups.json', 'w') as report_file:
     json.dump(spy_report, report_file)
 
 # проверка .json файла
-# with open('groups.json') as json_check:
-#     json_in_file = json.load(json_check)
-#     pprint(json_in_file)
+with open('groups.json') as json_check:
+    json_in_file = json.load(json_check)
+    pprint(json_in_file)

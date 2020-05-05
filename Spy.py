@@ -85,7 +85,7 @@ def user_friends(user_id, max_friends=1000):
     for user_friend in response_friends_list.json()['response']['items'][1:]:
         if friend_count == max_friends:
             break
-        elif friend_count == 1000:
+        elif friend_count == 999:
             id_list.append(ids)
             friend_count = 0
             ids = str(user_friend)
